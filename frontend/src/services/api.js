@@ -77,4 +77,11 @@ export const sosAPI = {
   trigger: () => api.post('/sos/'),
 };
 
+export const adminAPI = {
+  stats: () => api.get('/admin/stats/'),
+  riders: (search = '') => api.get(`/admin/riders/${search ? `?search=${search}` : ''}`),
+  riderDetail: (riderId) => api.get(`/admin/riders/${riderId}/`),
+  updateRider: (riderId, data) => api.patch(`/admin/riders/${riderId}/`, data),
+};
+
 export default api;

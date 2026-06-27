@@ -1,5 +1,13 @@
 from django.contrib import admin
-from .models import EmergencyContact, HelmetDevice, SensorReading, GPSLocation, Alert
+from .models import RiderProfile, EmergencyContact, HelmetDevice, SensorReading, GPSLocation, Alert
+
+
+@admin.register(RiderProfile)
+class RiderProfileAdmin(admin.ModelAdmin):
+    list_display = ('rider_id', 'user', 'phone', 'blood_group', 'is_active_rider', 'created_at')
+    list_filter = ('is_active_rider', 'blood_group')
+    search_fields = ('rider_id', 'user__username', 'user__first_name', 'user__last_name', 'phone')
+    readonly_fields = ('rider_id', 'created_at')
 
 
 @admin.register(EmergencyContact)

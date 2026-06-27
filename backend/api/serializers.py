@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import EmergencyContact, HelmetDevice, SensorReading, GPSLocation, Alert
+from .models import RiderProfile, EmergencyContact, HelmetDevice, SensorReading, GPSLocation, Alert
 
 
 class UserRegistrationSerializer(serializers.ModelSerializer):
@@ -19,6 +19,11 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop('password2')
         user = User.objects.create_user(**validated_data)
+        # Create rider profile with unique ID
+        RiderProfile.objects.create(
+            user=user,
+            rider_id=RiderProfile.generate_rider_id(),
+        )
         # Create a default helmet device for the user
         HelmetDevice.objects.create(
             user=user,
@@ -29,9 +34,16 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    is_staff = serializers.BooleanField(read_only=True)
+    rider_id = serializers.SerializerMethodField()
+
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'first_name', 'last_name')
+        fields = ('id', 'username', 'email', 'first_name', 'last_name', 'is_staff', 'rider_id')
+
+    def get_rider_id(self, obj):
+        profile = getattr(obj, 'rider_profile', None)
+        return profile.rider_id if profile else None
 
 
 class EmergencyContactSerializer(serializers.ModelSerializer):
@@ -118,3 +130,68 @@ class DashboardSerializer(serializers.Serializer):
     alerts_today = serializers.IntegerField()
     latest_alerts = AlertSerializer(many=True)
     sensor_summary = serializers.DictField()
+
+
+# ============ RIDER PROFILE ============
+
+class RiderProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RiderProfile
+        fields = ('rider_id', 'phone', 'address', 'blood_group',
+                  'license_number', 'is_active_rider', 'created_at')
+        read_only_fields = ('rider_id', 'created_at')
+
+
+# ============ ADMIN SERIALIZERS ============
+
+class AdminRiderListSerializer(serializers.Serializer):
+    """Rider summary for admin riders list."""
+    id = serializers.IntegerField(source='user.id')
+    rider_id = serializers.CharField()
+    username = serializers.CharField(source='user.username')
+    full_name = serializers.SerializerMethodField()
+    email = serializers.EmailField(source='user.email')
+    phone = serializers.CharField()
+    blood_group = serializers.CharField()
+    license_number = serializers.CharField()
+    is_active_rider = serializers.BooleanField()
+    created_at = serializers.DateTimeField()
+    device = serializers.SerializerMethodField()
+    latest_gps = serializers.SerializerMethodField()
+    alert_count = serializers.SerializerMethodField()
+    active_alerts = serializers.SerializerMethodField()
+
+    def get_full_name(self, obj):
+        name = obj.user.get_full_name()
+        return name if name else obj.user.username
+
+    def get_device(self, obj):
+        device = HelmetDevice.objects.filter(user=obj.user).first()
+        if device:
+            return {
+                'device_id': device.device_id,
+                'name': device.name,
+                'status': device.status,
+                'battery_level': device.battery_level,
+                'last_seen': device.last_seen.isoformat() if device.last_seen else None,
+            }
+        return None
+
+    def get_latest_gps(self, obj):
+        device = HelmetDevice.objects.filter(user=obj.user).first()
+        if device:
+            gps = GPSLocation.objects.filter(device=device).first()
+            if gps:
+                return {
+                    'latitude': gps.latitude,
+                    'longitude': gps.longitude,
+                    'speed': gps.speed,
+                    'timestamp': gps.timestamp.isoformat(),
+                }
+        return None
+
+    def get_alert_count(self, obj):
+        return Alert.objects.filter(device__user=obj.user).count()
+
+    def get_active_alerts(self, obj):
+        return Alert.objects.filter(device__user=obj.user, status='active').count()

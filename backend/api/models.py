@@ -2,6 +2,37 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+class RiderProfile(models.Model):
+    """Extended rider profile with unique rider ID."""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='rider_profile')
+    rider_id = models.CharField(max_length=20, unique=True, db_index=True)  # e.g., RDR-0001
+    phone = models.CharField(max_length=20, blank=True, default='')
+    address = models.TextField(blank=True, default='')
+    blood_group = models.CharField(max_length=5, blank=True, default='')
+    license_number = models.CharField(max_length=50, blank=True, default='')
+    is_active_rider = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['rider_id']
+
+    def __str__(self):
+        return f"{self.rider_id} — {self.user.get_full_name() or self.user.username}"
+
+    @staticmethod
+    def generate_rider_id():
+        """Generate the next sequential rider ID."""
+        last = RiderProfile.objects.order_by('-id').first()
+        if last:
+            try:
+                num = int(last.rider_id.split('-')[1]) + 1
+            except (IndexError, ValueError):
+                num = RiderProfile.objects.count() + 1
+        else:
+            num = 1
+        return f"RDR-{num:04d}"
+
+
 class EmergencyContact(models.Model):
     """Emergency contact for the user."""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='emergency_contacts')

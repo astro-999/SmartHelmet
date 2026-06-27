@@ -7,6 +7,7 @@ from .views import (
     AlertCreateView, AlertListView, AlertActionView,
     DashboardView, SensorHistoryView, GPSHistoryView,
     SOSTriggerView,
+    AdminStatsView, AdminRiderListView, AdminRiderDetailView,
 )
 from .views.device import EmergencyContactViewSet
 
@@ -38,4 +39,9 @@ urlpatterns = [
 
     # SOS
     path('sos/', SOSTriggerView.as_view(), name='sos-trigger'),
+
+    # Admin endpoints (staff only)
+    path('admin/stats/', AdminStatsView.as_view(), name='admin-stats'),
+    path('admin/riders/', AdminRiderListView.as_view(), name='admin-riders'),
+    path('admin/riders/<str:rider_id>/', AdminRiderDetailView.as_view(), name='admin-rider-detail'),
 ]

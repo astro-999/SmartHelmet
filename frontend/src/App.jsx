@@ -10,6 +10,8 @@ import SOSPage from './pages/SOSPage';
 import Settings from './pages/Settings';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import AdminDashboard from './pages/AdminDashboard';
+import AdminRiderDetail from './pages/AdminRiderDetail';
 
 function AppLayout() {
   const { isConnected } = useWebSocket();
@@ -36,6 +38,10 @@ export default function App() {
             <Route path="/alerts" element={<Alerts />} />
             <Route path="/sos" element={<SOSPage />} />
             <Route path="/settings" element={<Settings />} />
+            {/* Admin routes */}
+            <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/riders" element={<AdminDashboard />} />
+            <Route path="/admin/riders/:riderId" element={<AdminRiderDetail />} />
           </Route>
         </Routes>
       </BrowserRouter>

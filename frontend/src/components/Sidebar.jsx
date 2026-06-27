@@ -1,7 +1,8 @@
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
-  LayoutDashboard, Map, Bell, ShieldAlert, Settings, LogOut, Wifi, WifiOff
+  LayoutDashboard, Map, Bell, ShieldAlert, Settings, LogOut, Wifi, WifiOff,
+  Users, BarChart3
 } from 'lucide-react';
 
 const navItems = [
@@ -12,9 +13,15 @@ const navItems = [
   { to: '/settings', icon: Settings, label: 'Settings' },
 ];
 
+const adminItems = [
+  { to: '/admin', icon: BarChart3, label: 'Admin Overview' },
+  { to: '/admin/riders', icon: Users, label: 'All Riders' },
+];
+
 export default function Sidebar({ isConnected }) {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isAdmin = user?.is_staff === true;
 
   const handleLogout = () => {
     logout();
@@ -43,6 +50,25 @@ export default function Sidebar({ isConnected }) {
             {label}
           </NavLink>
         ))}
+
+        {isAdmin && (
+          <>
+            <div className="sidebar-divider">
+              <span>Admin Panel</span>
+            </div>
+            {adminItems.map(({ to, icon: Icon, label }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={to === '/admin'}
+                className={({ isActive }) => `nav-link admin-link ${isActive ? 'active' : ''}`}
+              >
+                <Icon size={20} />
+                {label}
+              </NavLink>
+            ))}
+          </>
+        )}
       </nav>
 
       <div className="sidebar-footer">
@@ -54,7 +80,12 @@ export default function Sidebar({ isConnected }) {
             <><WifiOff size={14} /> Disconnected</>
           )}
         </div>
-        <button className="nav-link" onClick={handleLogout} style={{ marginTop: 8 }}>
+        {user?.rider_id && (
+          <div className="sidebar-rider-id">
+            <span className="rider-id-badge" style={{ fontSize: 11 }}>{user.rider_id}</span>
+          </div>
+        )}
+        <button className="nav-link" onClick={handleLogout} style={{ marginTop: 4 }}>
           <LogOut size={20} />
           {user?.username || 'Logout'}
         </button>
